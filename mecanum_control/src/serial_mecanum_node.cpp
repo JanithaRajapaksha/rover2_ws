@@ -15,9 +15,9 @@ public:
     : Node("mecanum_node_serial")
     {
         // Declare parameters
-        this->declare_parameter<double>("wheel_radius", 0.05);
-        this->declare_parameter<double>("lx", 0.4);
-        this->declare_parameter<double>("ly", 0.4);
+        this->declare_parameter<double>("wheel_radius", 0.045);
+        this->declare_parameter<double>("lx", 0.2);
+        this->declare_parameter<double>("ly", 0.115);
         this->declare_parameter<std::string>("serial_port", "/dev/ttyACM0");
         this->declare_parameter<int>("baudrate", 115200);
 
@@ -61,33 +61,41 @@ private:
     }
 
     void computeWheels()
-    {
-        // Compute wheel RPMs
-        double w1 = (1.0 / wheel_radius_) * (vx_ - vy_ - L_ * wz_);
-        double w2 = (1.0 / wheel_radius_) * (vx_ + vy_ + L_ * wz_);
-        double w3 = (1.0 / wheel_radius_) * (vx_ + vy_ - L_ * wz_);
-        double w4 = (1.0 / wheel_radius_) * (vx_ - vy_ + L_ * wz_);
+{
+    // Compute wheel angular velocity in rad/s
+    double w1 = (1.0 / wheel_radius_) * (vx_ - vy_ - L_ * wz_);
+    double w2 = (1.0 / wheel_radius_) * (vx_ + vy_ + L_ * wz_);
+    double w3 = (1.0 / wheel_radius_) * (vx_ + vy_ - L_ * wz_);
+    double w4 = (1.0 / wheel_radius_) * (vx_ - vy_ + L_ * wz_);
 
-        // Throttled logging
-        RCLCPP_INFO_THROTTLE(
-            this->get_logger(),
-            *this->get_clock(),
-            1000,  // once per second
-            "w1=%.2f  w2=%.2f  w3=%.2f  w4=%.2f",
-            w1, w2, w3, w4
-        );
+    // Convert rad/s to RPM
+    double rpm1 = w1 * 9.549296585;
+    double rpm2 = w2 * 9.549296585;
+    double rpm3 = w3 * 9.549296585;
+    double rpm4 = w4 * 9.549296585;
 
-        // Send to ESP32 via serial
-        if (serial_fd_ >= 0) {
-            std::ostringstream ss;
-            ss << static_cast<int>(w1) << " "
-               << static_cast<int>(w2) << " "
-               << static_cast<int>(w3) << " "
-               << static_cast<int>(w4) << "\n";
-            std::string out_str = ss.str();
-            write(serial_fd_, out_str.c_str(), out_str.size());
-        }
+    // Throttled logging in RPM
+    RCLCPP_INFO_THROTTLE(
+        this->get_logger(),
+        *this->get_clock(),
+        1000, // once per second
+        "RPM1=%.2f  RPM2=%.2f  RPM3=%.2f  RPM4=%.2f",
+        rpm1, rpm2, rpm3, rpm4
+    );
+
+    // Send RPM (integer) to ESP32
+    if (serial_fd_ >= 0) {
+        std::ostringstream ss;
+        ss << static_cast<int>(rpm1) << " "
+           << static_cast<int>(rpm2) << " "
+           << static_cast<int>(rpm3) << " "
+           << static_cast<int>(rpm4) << "\n";
+
+        std::string out_str = ss.str();
+        write(serial_fd_, out_str.c_str(), out_str.size());
     }
+}
+
 
     bool setupSerial()
     {
