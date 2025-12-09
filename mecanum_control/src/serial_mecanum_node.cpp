@@ -35,7 +35,7 @@ public:
 
         // Subscribe to cmd_vel
         cmd_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-            "/cmd_vel_joy", 10,
+            "/cmd_vel", 10,
             std::bind(&MecanumNode::cmdVelCallback, this, std::placeholders::_1)
         );
 
