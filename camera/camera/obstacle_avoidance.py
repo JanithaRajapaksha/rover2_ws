@@ -22,7 +22,7 @@ class ToFPIDNode(Node):
             return
 
         # ----- Publisher -----
-        self.cmd_pub = self.create_publisher(Twist, 'cmd_vel_tracking', 10)
+        self.cmd_pub = self.create_publisher(Twist, 'cmd_vel_tof', 10)
         # Publisher for front 3 ToF distances
         self.tof_dist_pub = self.create_publisher(Float32MultiArray, '/tof_distances', 10)
 
@@ -68,13 +68,13 @@ class ToFPIDNode(Node):
 
                 # Publish front 3 distances
                 dist_msg = Float32MultiArray()
-                dist_msg.data = [front_left, front_center, front_right]
+                dist_msg.data = [front_left, front_center, front_right, left, right]
                 self.tof_dist_pub.publish(dist_msg)
 
 
                 # Log readings
                 self.get_logger().info(
-                    f"FL: {front_left:.0f} | FC: {front_center:.0f} | FR: {front_right:.0f}"
+                    f"FL: {front_left:.0f} | FC: {front_center:.0f} | FR: {front_right:.0f} | L: {left:.0f} | R: {right:.0f}"
                 )
 
                 # Compute PID only if object closer than 1000 mm

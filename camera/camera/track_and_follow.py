@@ -57,7 +57,7 @@ class PersonTrackerPIDNode(Node):
 
         # --- Publishers ---
         self.point_pub = self.create_publisher(Point, 'person_tracking_data', 10)
-        self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel_tracking', 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, 'cmd_vel_mp', 10)
 
         # --- Subscribers ---
         self.speed_level_sub = self.create_subscription(String, '/speed_level', self.speed_level_callback, 10)
