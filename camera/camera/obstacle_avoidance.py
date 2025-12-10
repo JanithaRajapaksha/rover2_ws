@@ -66,18 +66,17 @@ class ToFPIDNode(Node):
                 left = readings[0]
                 right = readings[1]
 
-                # Publish front 3 distances
+                # Publish front & side distances
                 dist_msg = Float32MultiArray()
                 dist_msg.data = [front_left, front_center, front_right, left, right]
                 self.tof_dist_pub.publish(dist_msg)
-
 
                 # Log readings
                 self.get_logger().info(
                     f"FL: {front_left:.0f} | FC: {front_center:.0f} | FR: {front_right:.0f} | L: {left:.0f} | R: {right:.0f}"
                 )
 
-                # Compute PID only if object closer than 1000 mm
+                # PID for angular.z
                 error = (front_left - front_right)
                 current_time = time.time()
                 dt = current_time - self.last_time if self.last_time else 0.1
@@ -91,44 +90,44 @@ class ToFPIDNode(Node):
                     self.kd * derivative
                 )
 
-                # ---- Limit maximum angular speed ----
+                # Limit maximum angular speed
                 pid_output = max(-self.max_angular_z, min(self.max_angular_z, pid_output))
 
-                # Build and publish a single Twist message per loop.
+                # Build Twist message
                 twist = Twist()
                 twist.angular.z = float(pid_output)
                 twist.linear.x = 0.07  # Default forward speed
+                twist.linear.y = 0.0   # Default strafe speed
 
-                # If the front-center sensor reports an obstacle closer than 500 mm,
-                # back off by setting a negative linear.x (units: m/s).
-                # Sensor readings are in mm, so compare directly and choose a
-                # reasonable back-off speed (e.g. -0.15 m/s).
+                # Front-center obstacle avoidance
                 if front_center < 300.0:
-                    backoff_speed = -0.1  # m/s (negative to move backwards)
+                    backoff_speed = -0.1
                     twist.linear.x = backoff_speed
                     self.get_logger().warn(f"Front center {front_center:.0f}mm < 300mm: backing off {backoff_speed} m/s")
-                # else:
-                #     # No backing off requested; keep forward/backward speed zero.
-                #     twist.linear.x = 0.0
 
+                # Left/right obstacle avoidance (strafe)
+                side_threshold = 300.0  # mm
+                strafe_speed = 0.2     # m/s
+
+                if right < side_threshold:
+                    twist.linear.y = strafe_speed  # Move right
+                    self.get_logger().warn(f"Left {left:.0f}mm < {side_threshold}mm: strafing right {strafe_speed} m/s")
+                elif left < side_threshold:
+                    twist.linear.y = -strafe_speed  # Move left
+                    self.get_logger().warn(f"Right {right:.0f}mm < {side_threshold}mm: strafing left {strafe_speed} m/s")
+
+                # Publish command
                 self.cmd_pub.publish(twist)
-                # --- Publish front distances ---
-                dist_msg = Float32MultiArray()
-                dist_msg.data = [front_left, front_center, front_right]
-                self.tof_dist_pub.publish(dist_msg)
-
-                self.get_logger().info(
-                    f"error={error:.2f} | PID={pid_output:.3f} rad/s | FC={front_center:.0f}mm"
-                )
 
                 self.prev_error = error
                 self.last_time = current_time
 
-                # Clear integral when no obstacle (keep controller stable)
+                # Optional: clear integral when no obstacle
                 self.integral = 0.0
 
         except Exception as e:
             self.get_logger().error(f"Serial read error: {e}")
+
 
 def main(args=None):
     rclpy.init(args=args)
