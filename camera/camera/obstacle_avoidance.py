@@ -11,7 +11,7 @@ class ToFPIDNode(Node):
         super().__init__('tof_pid_node')
 
         # ----- Serial setup -----
-        self.port = '/dev/ttyAMA1'
+        self.port = '/dev/ttyAMA0'
         self.baudrate = 115200
         try:
             self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
@@ -22,7 +22,7 @@ class ToFPIDNode(Node):
             return
 
         # ----- Publisher -----
-        self.cmd_pub = self.create_publisher(Twist, 'cmd_vel_tof', 10)
+        self.cmd_pub = self.create_publisher(Twist, 'cmd_vel_tracking', 10)
         # Publisher for front 3 ToF distances
         self.tof_dist_pub = self.create_publisher(Float32MultiArray, '/tof_distances', 10)
 
@@ -33,15 +33,15 @@ class ToFPIDNode(Node):
         self.kd = 0.001       # derivative gain
         self.target_dist = 1000.0  # target distance in mm
 
-        self.max_angular_z = 0.075  # rad/s (maximum angular velocity)
+        self.max_angular_z = 0.75  # rad/s (maximum angular velocity)
 
         # PID state
         self.prev_error = 0.0
         self.integral = 0.0
         self.last_time = time.time()
 
-        # Loop at 200 Hz
-        self.timer = self.create_timer(0.005, self.control_loop)
+        # Loop at 20 Hz
+        self.timer = self.create_timer(0.03, self.control_loop)
 
     def control_loop(self):
         """Read sensor data and perform angular correction with PID."""
@@ -60,11 +60,11 @@ class ToFPIDNode(Node):
                 readings = [float(x) for x in parts]
 
                 # Extract relevant sensors
-                front_right = readings[2]
-                front_left = readings[1]
-                front_center = readings[0]
-                left = readings[3]
-                right = readings[4]
+                front_right = readings[4]
+                front_left = readings[3]
+                front_center = readings[5]
+                left = readings[0]
+                right = readings[1]
 
                 # Publish front 3 distances
                 dist_msg = Float32MultiArray()
@@ -97,14 +97,14 @@ class ToFPIDNode(Node):
                 # Build and publish a single Twist message per loop.
                 twist = Twist()
                 twist.angular.z = float(pid_output)
-                twist.linear.x = 0.009  # Default forward speed
+                twist.linear.x = 0.07  # Default forward speed
 
                 # If the front-center sensor reports an obstacle closer than 500 mm,
                 # back off by setting a negative linear.x (units: m/s).
                 # Sensor readings are in mm, so compare directly and choose a
                 # reasonable back-off speed (e.g. -0.15 m/s).
                 if front_center < 300.0:
-                    backoff_speed = -0.02  # m/s (negative to move backwards)
+                    backoff_speed = -0.1  # m/s (negative to move backwards)
                     twist.linear.x = backoff_speed
                     self.get_logger().warn(f"Front center {front_center:.0f}mm < 300mm: backing off {backoff_speed} m/s")
                 # else:
