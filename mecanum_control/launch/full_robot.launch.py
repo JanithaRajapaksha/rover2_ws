@@ -1,0 +1,62 @@
+"""Combined launch file that includes three other launch files.
+
+Included launches:
+ - rover1/launch/launch_robot.launch.py
+ - camera/launch/track_and_follow_all.launch.py
+ - uwb/launch/come_to_me_all.launch.py
+
+Run with:
+  ros2 launch rover1 full_launch.launch.py
+"""
+import os
+
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription, LogInfo, TimerAction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
+from launch_ros.actions import Node
+
+
+def generate_launch_description():
+	pkg_rover1 = get_package_share_directory('mecanum_control')
+	pkg_camera = get_package_share_directory('camera')
+
+	launch_files = [
+		os.path.join(pkg_rover1, 'launch', 'launch_robot.launch.py'),
+		os.path.join(pkg_camera, 'launch', 'track_and_follow_all.launch.py'),
+	]
+
+	# tof_pid_node = Node(
+    #     package='camera',
+    #     executable='obstacle_avoidance.py',
+    #     name='tof_pid_node',
+    #     output='screen'
+    # )
+
+	mode_controller_node = Node(
+        package='remote',
+        executable='mode_controller.py',
+        name='mode_controller',
+        output='screen'
+    )
+
+	delayed_mode_controller = TimerAction(
+			period=2.0,
+			actions=[mode_controller_node]
+	)
+ 
+	controller_ready_node = Node(
+		package='remote',
+		executable='controller_ready_pub.py',
+		output='screen'
+	)
+
+	actions = []
+	# actions.append(tof_pid_node)
+	for lf in launch_files:
+		actions.append(LogInfo(msg=f"Including launch file: {lf}"))
+		actions.append(IncludeLaunchDescription(PythonLaunchDescriptionSource(lf)))
+	actions.append(delayed_mode_controller)
+	actions.append(controller_ready_node)
+	return LaunchDescription(actions)
+

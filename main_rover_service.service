@@ -1,0 +1,22 @@
+[Unit]
+Description=Manage ROS2 main launch
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/rover2/rover2_ws
+
+# Source ROS2 environment + start launch
+ExecStart=/bin/bash -c "source /opt/ros/jazzy/setup.bash && \
+                       source /home/rover2/rover2_ws/install/setup.bash && \
+                       ros2 launch mecanum_control launch_robot.launch.py"
+
+# Keep service active after script exits
+RemainAfterExit=yes
+
+# Logging
+StandardOutput=append:/var/log/rover_launch.log
+StandardError=append:/var/log/rover_launch.log
+
+[Install]
+WantedBy=multi-user.target
