@@ -4,12 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/rover2/rover2_ws
+WorkingDirectory=/home/rover2
+User=rover2
 
 # Source ROS2 environment + start launch
-ExecStart=/bin/bash -c "source /opt/ros/jazzy/setup.bash && \
-                       source /home/rover2/rover2_ws/install/setup.bash && \
-                       ros2 launch mecanum_control launch_robot.launch.py"
+ExecStart=/bin/bash /home/rover2/start_rover.sh
 
 # Keep service active after script exits
 RemainAfterExit=yes

@@ -1,0 +1,17 @@
+[Unit]
+Description=Run Python script that requires network
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=rover2
+WorkingDirectory=/home/rover2
+ExecStart=/home/rover2/rover1_camera/camera/bin/python3 /home/rover2/rover1_camera/mp_tracking_server_no_rend.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/var/log/my_python_service.log
+StandardError=append:/var/log/my_python_service.log
+
+[Install]
+WantedBy=multi-user.target
