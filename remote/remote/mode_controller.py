@@ -30,8 +30,10 @@ class UDPJoystick(Node):
 
         # --- Speed scaling factors (default) ---
         self.speed_level = 1  # 1, 2, 3, or 4
-        self.linear_scale = 0.3
-        self.angular_scale = 1.2
+        # self.linear_scale = 0.3
+        # self.angular_scale = 1.2
+        self.linear_scale = 0.9
+        self.angular_scale = 3.0
 
         # --- Mode state ---
         self.current_mode = "manual"

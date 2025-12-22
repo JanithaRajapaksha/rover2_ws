@@ -24,10 +24,10 @@ class PersonTrackerPIDNode(Node):
         self.declare_parameter('max_ang_vel', 1.165)
 
         #Linear PID (for distance control) to be calibrated
-        self.declare_parameter('kp_lin', 2.0)
+        self.declare_parameter('kp_lin', 5.0)
         self.declare_parameter('ki_lin', 0.0)
         self.declare_parameter('kd_lin', 0.02)  
-        self.declare_parameter('max_lin_vel', 0.363)
+        self.declare_parameter('max_lin_vel', 0.8)
 
         # self.declare_parameter('kp_lin', 0)
         # self.declare_parameter('ki_lin', 0)
